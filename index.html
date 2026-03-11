@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Flashcards</title>
     <link rel="icon" type="image/png" href="./iconv2.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -20,6 +20,9 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #818cf8; }
+
+        /* Mobil kaydırma sırasında sayfa davranışlarını kısıtlama */
+        .touch-action-none { touch-action: none; }
     </style>
     <script>
         tailwind.config = { darkMode: 'class' }
@@ -156,8 +159,8 @@
                 </div>
             </div>
 
-            <div class="perspective-1000 w-full max-w-sm aspect-[3/4] cursor-pointer group select-none" id="flashcard-container">
-                <div id="flashcard-inner" class="relative w-full h-full transform-style-3d card-transition shadow-2xl rounded-3xl">
+            <div class="perspective-1000 w-full max-w-sm aspect-[3/4] cursor-pointer group select-none touch-action-none" id="flashcard-container">
+                <div id="flashcard-inner" class="relative w-full h-full transform-style-3d card-transition shadow-2xl rounded-3xl will-change-transform">
                     
                     <!-- ÖN YÜZ -->
                     <div class="absolute inset-0 w-full h-full backface-hidden bg-white dark:bg-slate-800 rounded-3xl p-6 flex flex-col items-center border border-slate-100 dark:border-slate-700">
@@ -178,17 +181,25 @@
                     </div>
 
                     <!-- ARKA YÜZ -->
-                    <div id="card-back-face" class="absolute inset-0 w-full h-full backface-hidden bg-indigo-600 rounded-3xl p-6 flex flex-col items-center justify-center rotate-y-180 border border-transparent text-white shadow-[inset_0_0_40px_rgba(0,0,0,0.1)] transition-colors duration-300">
-                        <div class="flex-1 flex flex-col items-center justify-center w-full text-center gap-6">
+                    <div id="card-back-face" class="absolute inset-0 w-full h-full backface-hidden bg-indigo-600 rounded-3xl p-6 flex flex-col items-center justify-center rotate-y-180 border border-transparent text-white shadow-[inset_0_0_40px_rgba(0,0,0,0.1)] transition-colors duration-300 overflow-hidden">
+                        
+                        <!-- Swipe Geri Bildirim Katmanı -->
+                        <div id="swipe-overlay" class="absolute inset-0 z-20 flex items-center justify-center opacity-0 transition-opacity duration-150 pointer-events-none rounded-3xl">
+                            <div id="swipe-badge" class="px-6 py-3 rounded-2xl text-2xl font-bold border-4 backdrop-blur-md shadow-2xl transform scale-50 transition-transform duration-150">
+                                <!-- İçerik JS ile güncellenecek -->
+                            </div>
+                        </div>
+
+                        <div class="flex-1 flex flex-col items-center justify-center w-full text-center gap-6 relative z-10">
                             <i class="ph-fill ph-check-circle text-5xl text-white/50"></i>
                             <h2 id="card-back-text" class="text-3xl md:text-4xl font-bold break-words w-full drop-shadow-md">Arka Yüz</h2>
                         </div>
                         
-                        <div class="w-full flex items-end mt-2">
+                        <div class="w-full flex items-end mt-2 relative z-10">
                             <button id="back-tts-btn" class="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 transition-colors tts-btn hidden" title="Sesi Dinle">
                                 <i class="ph-fill ph-speaker-high text-xl pointer-events-none"></i>
                             </button>
-                            <span class="text-xs text-white/50 font-medium ml-auto">Derecelendir</span>
+                            <span class="text-xs text-white/50 font-medium ml-auto">Değerlendir</span>
                         </div>
                     </div>
 
@@ -196,30 +207,30 @@
             </div>
 
             <!-- Kontroller -->
-            <div id="rating-controls" class="flex flex-col items-center justify-center gap-4 mt-8 opacity-0 pointer-events-none transition-all duration-300">
-                <div class="flex items-center gap-3 md:gap-4">
-                    <button id="btn-hard" class="w-24 md:w-28 py-3 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded-xl font-bold shadow-sm transition-transform active:scale-95 flex flex-col items-center border border-red-200 dark:border-red-800/50">
+            <div id="rating-controls" class="flex flex-col items-center justify-center gap-4 mt-8 opacity-0 pointer-events-none transition-all duration-300 w-full max-w-sm">
+                <div class="flex items-center gap-2 md:gap-4 w-full justify-between">
+                    <button id="btn-hard" class="flex-1 py-3 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded-xl font-bold shadow-sm transition-transform active:scale-95 flex flex-col items-center border border-red-200 dark:border-red-800/50">
                         <span>Zor</span>
-                        <span class="text-[10px] md:text-xs font-normal opacity-70">Yakında tekrar</span>
+                        <span class="text-[10px] md:text-xs font-normal opacity-70">Sola kaydır</span>
                     </button>
-                    <button id="btn-medium" class="w-24 md:w-28 py-3 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 rounded-xl font-bold shadow-sm transition-transform active:scale-95 flex flex-col items-center border border-amber-200 dark:border-amber-800/50">
+                    <button id="btn-medium" class="flex-1 py-3 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-400 rounded-xl font-bold shadow-sm transition-transform active:scale-95 flex flex-col items-center border border-amber-200 dark:border-amber-800/50">
                         <span>Orta</span>
-                        <span class="text-[10px] md:text-xs font-normal opacity-70">Sona at</span>
+                        <span class="text-[10px] md:text-xs font-normal opacity-70">Aşağı kaydır</span>
                     </button>
-                    <button id="btn-easy" class="w-24 md:w-28 py-3 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 rounded-xl font-bold shadow-sm transition-transform active:scale-95 flex flex-col items-center border border-green-200 dark:border-green-800/50">
+                    <button id="btn-easy" class="flex-1 py-3 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 rounded-xl font-bold shadow-sm transition-transform active:scale-95 flex flex-col items-center border border-green-200 dark:border-green-800/50">
                         <span>Kolay</span>
-                        <span class="text-[10px] md:text-xs font-normal opacity-70">Öğrendim</span>
+                        <span class="text-[10px] md:text-xs font-normal opacity-70">Sağa kaydır</span>
                     </button>
                 </div>
-                <div class="text-slate-400 dark:text-slate-500 text-xs font-medium flex gap-4 mt-2">
+                <div class="text-slate-400 dark:text-slate-500 text-xs font-medium hidden md:flex gap-4 mt-2">
                     <span class="flex items-center gap-1"><i class="ph-bold ph-keyboard"></i> 1</span>
                     <span class="flex items-center gap-1"><i class="ph-bold ph-keyboard"></i> 2</span>
                     <span class="flex items-center gap-1"><i class="ph-bold ph-keyboard"></i> 3</span>
                 </div>
             </div>
 
-            <div id="flip-hint" class="flex items-center justify-center mt-10 text-slate-400 dark:text-slate-500 text-sm font-medium transition-all">
-                <span class="flex items-center gap-1"><i class="ph-bold ph-arrows-left-right"></i> Çevirmek için Boşluk veya Tıkla</span>
+            <div id="flip-hint" class="flex flex-col items-center text-center justify-center mt-6 text-slate-400 dark:text-slate-500 text-sm font-medium transition-all gap-1 px-4">
+                <span class="flex items-center gap-1"><i class="ph-bold ph-arrows-left-right"></i> Çevirmek için dokun</span>
             </div>
 
             </div><!-- end inner center wrapper -->
@@ -227,26 +238,6 @@
     </div>
 
     <script>
-        // ====== Ses Kilit Açma (Mobil İçin Kritik) ======
-        let audioUnlocked = false;
-        function unlockAudio() {
-            if (audioUnlocked) return;
-            // Tarayıcıyı kandırmak için boş bir ses çaldırıyoruz
-            const silentAudio = new Audio("data:audio/mp3;base64,//OExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
-            silentAudio.play().catch(() => {});
-            
-            // Konuşma motorunu uyandırıyoruz
-            const utterance = new SpeechSynthesisUtterance('');
-            utterance.volume = 0;
-            window.speechSynthesis.speak(utterance);
-            
-            audioUnlocked = true;
-            document.removeEventListener('touchstart', unlockAudio);
-            document.removeEventListener('click', unlockAudio);
-        }
-        document.addEventListener('touchstart', unlockAudio, { once: true });
-        document.addEventListener('click', unlockAudio, { once: true });
-
         // ====== DOM Elementleri ======
         const libraryView = document.getElementById('library-view');
         const setupView = document.getElementById('setup-view');
@@ -283,6 +274,8 @@
         const reverseModeToggle = document.getElementById('reverse-mode');
         const shuffleModeToggle = document.getElementById('shuffle-mode');
         
+        const swipeOverlay = document.getElementById('swipe-overlay');
+        const swipeBadge = document.getElementById('swipe-badge');
         const ratingControls = document.getElementById('rating-controls');
         const flipHint = document.getElementById('flip-hint');
         const btnHard = document.getElementById('btn-hard');
@@ -333,7 +326,6 @@
             decks.forEach(deck => {
                 const total = deck.totalCards || 0;
                 const learned = deck.learnedCount || 0;
-                const remaining = deck.studyQueue ? deck.studyQueue.length : total;
                 const pct = total > 0 ? Math.round((learned / total) * 100) : 0;
                 const hasProgress = deck.studyQueue && deck.studyQueue.length > 0 && learned > 0;
                 const lastDate = deck.lastStudied ? new Date(deck.lastStudied).toLocaleDateString('tr-TR') : 'Hiç çalışılmadı';
@@ -395,7 +387,6 @@
             renderLibrary();
         }
 
-        // ====== Ekran Geçişleri ======
         function showLibrary() {
             libraryView.classList.remove('hidden');
             setupView.classList.add('hidden');
@@ -624,11 +615,19 @@
             }
             currentCard = studyQueue.shift();
             isFlipped = false;
+            
+            // Stilleri Sıfırla
             flashcardInner.style.transition = 'none';
             flashcardInner.classList.remove('rotate-y-180');
+            flashcardInner.style.transform = ''; // Swipe kaymasını sıfırla
+            swipeOverlay.style.opacity = '0';
+            swipeBadge.style.transform = 'scale(0.5)';
+
             ratingControls.classList.add('opacity-0', 'pointer-events-none');
             flipHint.classList.remove('opacity-0');
-            setTimeout(() => flashcardInner.style.transition = '', 50);
+            setTimeout(() => {
+                flashcardInner.style.transition = '';
+            }, 50);
 
             const randomColor = cardColors[Math.floor(Math.random() * cardColors.length)];
             cardBackFace.className = cardBackFace.className.replace(/bg-\w+-600/g, '') + ' ' + randomColor;
@@ -650,32 +649,127 @@
             }
 
             saveProgress();
-            
-            // Eğer normal moddaysak, ön yüz gösterildiğinde sesi oku
             if (!isReverse) playCardAudio();
         }
 
+        // ====== Kart Çevirme ve Kaydırma (Swipe) Mantığı ======
         function toggleFlip() {
             isFlipped = !isFlipped;
             flashcardInner.classList.toggle('rotate-y-180', isFlipped);
             ratingControls.classList.toggle('opacity-0', !isFlipped);
             ratingControls.classList.toggle('pointer-events-none', !isFlipped);
             flipHint.classList.toggle('opacity-0', isFlipped);
-            
-            // Eğer tersten çalışıyorsak (yabancı kelime arka yüzdeyse), çevirince oku
             if (isFlipped && reverseModeToggle.checked) playCardAudio();
         }
 
         flashcardContainer.addEventListener('click', (e) => {
-            if (!e.target.closest('.tts-btn')) toggleFlip();
+            if (!e.target.closest('.tts-btn')) {
+                // Sadece kart yüzeyine tıklanınca çevir (swipe sırasındaki tıklamaları engellemek için dokunma toleransı eklendi)
+                if (!isDraggingCard) toggleFlip();
+            }
         });
 
+        // Swipe Değişkenleri
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isDraggingCard = false;
+        const SWIPE_THRESHOLD = 80;
+
+        flashcardContainer.addEventListener('touchstart', (e) => {
+            if (!isFlipped) return; // Sadece arkası dönükken (değerlendirme aşamasında) kaydırmaya izin ver
+            
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isDraggingCard = true;
+            flashcardInner.style.transition = 'none';
+        }, { passive: true });
+
+        flashcardContainer.addEventListener('touchmove', (e) => {
+            if (!isDraggingCard || !isFlipped) return;
+            e.preventDefault();
+
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+            
+            const deltaX = currentX - touchStartX;
+            const deltaY = currentY - touchStartY;
+            
+            // rotateY(180deg) uygulandığı için X ekseni aynalanır. 
+            // Parmağı sağa (pozitif) kaydırdığımızda, ayna yüzeyin de pozitif yönüne (yani sola) gitmemesi için X'i eksi ile çarpıyoruz.
+            const moveX = -deltaX; 
+            const moveY = deltaY > 0 ? deltaY : 0; 
+            const rotateZ = moveX * 0.04;
+            
+            flashcardInner.style.transform = `rotateY(180deg) translate(${moveX}px, ${moveY}px) rotateZ(${rotateZ}deg)`;
+
+            // Görsel Geri Bildirim
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 20) {
+                swipeOverlay.style.opacity = '1';
+                swipeBadge.style.transform = 'scale(1)';
+                if (deltaX > 0) {
+                    // Sağa (Kolay)
+                    swipeOverlay.className = "absolute inset-0 z-20 flex items-center justify-center transition-opacity duration-150 pointer-events-none rounded-3xl bg-green-500/20 opacity-100";
+                    swipeBadge.className = "px-6 py-3 rounded-2xl text-2xl font-bold border-4 backdrop-blur-md shadow-2xl transition-transform duration-150 border-green-400 text-green-100 bg-green-600/50 scale-100 flex items-center gap-2";
+                    swipeBadge.innerHTML = '<i class="ph-bold ph-check-circle"></i> Kolay';
+                } else {
+                    // Sola (Zor)
+                    swipeOverlay.className = "absolute inset-0 z-20 flex items-center justify-center transition-opacity duration-150 pointer-events-none rounded-3xl bg-red-500/20 opacity-100";
+                    swipeBadge.className = "px-6 py-3 rounded-2xl text-2xl font-bold border-4 backdrop-blur-md shadow-2xl transition-transform duration-150 border-red-400 text-red-100 bg-red-600/50 scale-100 flex items-center gap-2";
+                    swipeBadge.innerHTML = '<i class="ph-bold ph-x-circle"></i> Zor';
+                }
+            } else if (deltaY > 20) {
+                // Aşağı kaydırma (Orta)
+                swipeOverlay.style.opacity = '1';
+                swipeBadge.style.transform = 'scale(1)';
+                swipeOverlay.className = "absolute inset-0 z-20 flex items-center justify-center transition-opacity duration-150 pointer-events-none rounded-3xl bg-amber-500/20 opacity-100";
+                swipeBadge.className = "px-6 py-3 rounded-2xl text-2xl font-bold border-4 backdrop-blur-md shadow-2xl transition-transform duration-150 border-amber-400 text-amber-100 bg-amber-600/50 scale-100 flex items-center gap-2";
+                swipeBadge.innerHTML = '<i class="ph-bold ph-minus-circle"></i> Orta';
+            } else {
+                swipeOverlay.style.opacity = '0';
+                swipeBadge.style.transform = 'scale(0.5)';
+            }
+        }, { passive: false });
+
+        flashcardContainer.addEventListener('touchend', (e) => {
+            if (!isDraggingCard || !isFlipped) return;
+            
+            flashcardInner.style.transition = 'transform 0.4s cubic-bezier(0.4, 0.2, 0.2, 1)';
+            
+            const currentX = e.changedTouches[0].clientX;
+            const currentY = e.changedTouches[0].clientY;
+            
+            const deltaX = currentX - touchStartX;
+            const deltaY = currentY - touchStartY;
+            
+            setTimeout(() => { isDraggingCard = false; }, 50);
+
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > SWIPE_THRESHOLD) {
+                if (deltaX > 0) handleRating('easy'); 
+                else handleRating('hard'); 
+            } else if (deltaY > SWIPE_THRESHOLD) {
+                handleRating('medium');
+            } else {
+                flashcardInner.style.transform = 'rotateY(180deg)';
+                swipeOverlay.style.opacity = '0';
+                swipeBadge.style.transform = 'scale(0.5)';
+            }
+        });
+
+        // ====== Derecelendirme ======
         function handleRating(rating) {
             if (!isFlipped) return;
-            if (rating === 'hard') studyQueue.splice(Math.min(2, studyQueue.length), 0, currentCard);
-            else if (rating === 'medium') studyQueue.push(currentCard);
-            else learnedCount++;
-            loadNextCard();
+            
+            // X ekseninin (rotateY yüzünden) ters çalıştığına dikkat ederek dışarı çıkış animasyonunu ayarlıyoruz
+            if (rating === 'easy') flashcardInner.style.transform = 'rotateY(180deg) translate(-150%, 0) rotateZ(-20deg)';
+            else if (rating === 'hard') flashcardInner.style.transform = 'rotateY(180deg) translate(150%, 0) rotateZ(20deg)';
+            else if (rating === 'medium') flashcardInner.style.transform = 'rotateY(180deg) translate(0, 150%)';
+
+            setTimeout(() => {
+                if (rating === 'hard') studyQueue.splice(Math.min(2, studyQueue.length), 0, currentCard);
+                else if (rating === 'medium') studyQueue.push(currentCard);
+                else learnedCount++;
+                loadNextCard();
+            }, 250);
         }
 
         btnHard.addEventListener('click', () => handleRating('hard'));
@@ -693,21 +787,16 @@
             }
         });
 
-        // ====== GÜNCELLENMİŞ SES ÇALMA FONKSİYONU ======
+        // ====== Ses ======
         function playCardAudio() {
             if (!currentCard) return;
             if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
             window.speechSynthesis.cancel();
-            
-            const textToSpeak = encodeURIComponent(currentCard.front); // Yabancı dil metni daima 'front' içerisinde
-            const langCode = currentCard.lang.split('-')[0] || 'tr';
-            
-            // Daha az kısıtlanan gtx client url'i
-            const ttsUrl = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=${langCode}&q=${textToSpeak}`;
-            
+            const textToSpeak = encodeURIComponent(currentCard.front);
+            const langCode = currentCard.lang.split('-')[0];
+            const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${textToSpeak}&tl=${langCode}&client=tw-ob`;
             currentAudio = new Audio(ttsUrl);
-            currentAudio.play().catch((err) => {
-                console.warn("Google TTS bağlantısı reddedildi, yerel sese geçiliyor:", err);
+            currentAudio.play().catch(() => {
                 const utterance = new SpeechSynthesisUtterance(currentCard.front);
                 utterance.lang = currentCard.lang;
                 utterance.rate = 0.9;
@@ -715,12 +804,7 @@
             });
         }
 
-        document.querySelectorAll('.tts-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Kart çevirmeyi engelle
-                playCardAudio();
-            });
-        });
+        document.querySelectorAll('.tts-btn').forEach(btn => btn.addEventListener('click', playCardAudio));
 
         // ====== Tema ======
         function toggleTheme() {
@@ -731,6 +815,7 @@
 
         const cardColors = ['bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-purple-600', 'bg-sky-600'];
 
+        // ====== Yardımcı ======
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -738,6 +823,7 @@
             }
         }
 
+        // ====== Başlangıç ======
         showLibrary();
     </script>
 </body>
