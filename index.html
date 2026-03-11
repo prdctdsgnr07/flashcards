@@ -227,6 +227,26 @@
     </div>
 
     <script>
+        // ====== Ses Kilit Açma (Mobil İçin Kritik) ======
+        let audioUnlocked = false;
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            // Tarayıcıyı kandırmak için boş bir ses çaldırıyoruz
+            const silentAudio = new Audio("data:audio/mp3;base64,//OExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
+            silentAudio.play().catch(() => {});
+            
+            // Konuşma motorunu uyandırıyoruz
+            const utterance = new SpeechSynthesisUtterance('');
+            utterance.volume = 0;
+            window.speechSynthesis.speak(utterance);
+            
+            audioUnlocked = true;
+            document.removeEventListener('touchstart', unlockAudio);
+            document.removeEventListener('click', unlockAudio);
+        }
+        document.addEventListener('touchstart', unlockAudio, { once: true });
+        document.addEventListener('click', unlockAudio, { once: true });
+
         // ====== DOM Elementleri ======
         const libraryView = document.getElementById('library-view');
         const setupView = document.getElementById('setup-view');
@@ -281,10 +301,10 @@
         let isFlipped = false;
         let imageMap = {};
         let currentAudio = null;
-        let currentDeckId = null; // aktif deste ID
+        let currentDeckId = null;
 
         // ====== Kütüphane Yönetimi (localStorage) ======
-        const LIBRARY_KEY = 'flashcard_library'; // { [deckId]: { id, name, rawText, totalCards, learnedCount, studyQueue, lastStudied, isReverse, isShuffle } }
+        const LIBRARY_KEY = 'flashcard_library';
 
         function getLibrary() {
             try { return JSON.parse(localStorage.getItem(LIBRARY_KEY)) || {}; }
@@ -304,7 +324,6 @@
             const decks = Object.values(lib);
             emptyLibraryMsg.style.display = decks.length === 0 ? 'block' : 'none';
 
-            // Remove old deck cards (keep empty msg)
             Array.from(deckList.children).forEach(child => {
                 if (child !== emptyLibraryMsg) child.remove();
             });
@@ -357,7 +376,6 @@
                 deckList.appendChild(div);
             });
 
-            // Event listeners for deck buttons
             document.querySelectorAll('.deck-start-btn').forEach(btn => {
                 btn.addEventListener('click', () => startDeckStudy(btn.dataset.id));
             });
@@ -411,7 +429,6 @@
             }
         }
 
-        // ====== Deste Kaydetme ======
         function saveDeckToLibrary() {
             const name = deckNameInput.value.trim() || 'İsimsiz Deste';
             const rawText = cardsInput.value.trim();
@@ -437,7 +454,6 @@
             };
 
             if (!currentDeckId) {
-                // Reset progress for new deck
                 lib[id].learnedCount = 0;
                 lib[id].studyQueue = null;
             }
@@ -447,7 +463,6 @@
             saveDeckLabel.textContent = 'Değişiklikleri Kaydet';
             setupTitle.textContent = 'Desteyi Düzenle';
 
-            // Visual feedback
             saveDeckBtn.classList.add('bg-emerald-100', 'dark:bg-emerald-900/30', 'text-emerald-700');
             saveDeckBtn.innerHTML = '<i class="ph-bold ph-check"></i> Kaydedildi!';
             setTimeout(() => {
@@ -456,7 +471,6 @@
             }, 1500);
         }
 
-        // ====== İlerlemeyi Kaydetme ======
         function checkSavedProgress(deckId) {
             if (!deckId) { continueBtn.classList.add('hidden'); return; }
             const lib = getLibrary();
@@ -490,7 +504,6 @@
             saveLibrary(lib);
         }
 
-        // ====== Deste ile Çalışmayı Başlat ======
         function startDeckStudy(deckId) {
             const lib = getLibrary();
             const deck = lib[deckId];
@@ -501,7 +514,6 @@
             reverseModeToggle.checked = deck.isReverse || false;
             shuffleModeToggle.checked = deck.isShuffle !== false;
 
-            // Devam et: kayıtlı kuyruk varsa kullan
             if (deck.studyQueue && deck.studyQueue.length > 0) {
                 studyQueue = [...deck.studyQueue];
                 learnedCount = deck.learnedCount || 0;
@@ -518,7 +530,6 @@
             loadNextCard();
         }
 
-        // ====== Kart Ayrıştırma ======
         function parseCards(text) {
             return text.split('\n').filter(l => l.trim()).map(line => {
                 const p = line.split('|').map(s => s.trim());
@@ -526,7 +537,6 @@
             }).filter(c => c.front && c.back);
         }
 
-        // ====== Buton Olayları ======
         newDeckBtn.addEventListener('click', () => openDeckSetup(null));
         backToLibraryBtn.addEventListener('click', showLibrary);
         saveDeckBtn.addEventListener('click', saveDeckToLibrary);
@@ -536,7 +546,6 @@
             if (cards.length === 0) { errorMsg.classList.remove('hidden'); return; }
             errorMsg.classList.add('hidden');
 
-            // Kaydet veya güncelle
             if (currentDeckId || deckNameInput.value.trim()) saveDeckToLibrary();
             
             const lib = getLibrary();
@@ -583,14 +592,12 @@
             showLibrary();
         });
 
-        // ====== Görsel Yükleme ======
         imageUpload.addEventListener('change', (e) => {
             for (let file of e.target.files) imageMap[file.name] = URL.createObjectURL(file);
             fileCountTxt.textContent = `${e.target.files.length} görsel seçildi`;
             fileCountTxt.classList.add('text-indigo-600', 'font-bold');
         });
 
-        // ====== TXT Dosyası Kaydet/Yükle ======
         saveTxtBtn.addEventListener('click', () => {
             const blob = new Blob([cardsInput.value], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
@@ -607,7 +614,6 @@
             reader.readAsText(file); e.target.value = '';
         });
 
-        // ====== Kart Yükleme ======
         function loadNextCard() {
             if (studyQueue.length === 0) {
                 saveProgress();
@@ -644,16 +650,19 @@
             }
 
             saveProgress();
+            
+            // Eğer normal moddaysak, ön yüz gösterildiğinde sesi oku
             if (!isReverse) playCardAudio();
         }
 
-        // ====== Kart Çevirme ======
         function toggleFlip() {
             isFlipped = !isFlipped;
             flashcardInner.classList.toggle('rotate-y-180', isFlipped);
             ratingControls.classList.toggle('opacity-0', !isFlipped);
             ratingControls.classList.toggle('pointer-events-none', !isFlipped);
             flipHint.classList.toggle('opacity-0', isFlipped);
+            
+            // Eğer tersten çalışıyorsak (yabancı kelime arka yüzdeyse), çevirince oku
             if (isFlipped && reverseModeToggle.checked) playCardAudio();
         }
 
@@ -661,7 +670,6 @@
             if (!e.target.closest('.tts-btn')) toggleFlip();
         });
 
-        // ====== Derecelendirme ======
         function handleRating(rating) {
             if (!isFlipped) return;
             if (rating === 'hard') studyQueue.splice(Math.min(2, studyQueue.length), 0, currentCard);
@@ -685,16 +693,21 @@
             }
         });
 
-        // ====== Ses ======
+        // ====== GÜNCELLENMİŞ SES ÇALMA FONKSİYONU ======
         function playCardAudio() {
             if (!currentCard) return;
             if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
             window.speechSynthesis.cancel();
-            const textToSpeak = encodeURIComponent(currentCard.front);
-            const langCode = currentCard.lang.split('-')[0];
-            const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${textToSpeak}&tl=${langCode}&client=tw-ob`;
+            
+            const textToSpeak = encodeURIComponent(currentCard.front); // Yabancı dil metni daima 'front' içerisinde
+            const langCode = currentCard.lang.split('-')[0] || 'tr';
+            
+            // Daha az kısıtlanan gtx client url'i
+            const ttsUrl = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=${langCode}&q=${textToSpeak}`;
+            
             currentAudio = new Audio(ttsUrl);
-            currentAudio.play().catch(() => {
+            currentAudio.play().catch((err) => {
+                console.warn("Google TTS bağlantısı reddedildi, yerel sese geçiliyor:", err);
                 const utterance = new SpeechSynthesisUtterance(currentCard.front);
                 utterance.lang = currentCard.lang;
                 utterance.rate = 0.9;
@@ -702,7 +715,12 @@
             });
         }
 
-        document.querySelectorAll('.tts-btn').forEach(btn => btn.addEventListener('click', playCardAudio));
+        document.querySelectorAll('.tts-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Kart çevirmeyi engelle
+                playCardAudio();
+            });
+        });
 
         // ====== Tema ======
         function toggleTheme() {
@@ -713,7 +731,6 @@
 
         const cardColors = ['bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-purple-600', 'bg-sky-600'];
 
-        // ====== Yardımcı ======
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -721,7 +738,6 @@
             }
         }
 
-        // ====== Başlangıç ======
         showLibrary();
     </script>
 </body>
